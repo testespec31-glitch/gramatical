@@ -1,0 +1,149 @@
+@import "tailwindcss" source("../");
+
+@theme {
+  --color-papel: #efe7d6;
+  --color-papel-claro: #f8f3e8;
+  --color-papel-fundo: #e4d9c3;
+  --color-tinta: #211d18;
+  --color-tinta-media: #554d42;
+  --color-tinta-fraca: #8c8275;
+  --color-vermelho: #c23b22;
+  --color-vermelho-fundo: #f6ddd5;
+  --color-azul: #2c4878;
+  --color-verde: #3f7550;
+  --color-verde-fundo: #dde8dc;
+  --color-ocre: #c08527;
+
+  --font-display: "Fraunces", "Iowan Old Style", Georgia, serif;
+  --font-corpo: "Karla", "Avenir Next", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+html {
+  background-color: var(--color-papel);
+}
+
+body {
+  @apply m-0 bg-papel text-tinta;
+  font-family: var(--font-corpo);
+  font-optical-sizing: auto;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.fonte-display {
+  font-family: var(--font-display);
+  font-variation-settings: "SOFT" 40, "WONK" 1;
+  letter-spacing: -0.02em;
+}
+
+.fonte-mono {
+  font-family: var(--font-mono);
+  font-feature-settings: "tnum" 1;
+}
+
+/* Papel pautado: linhas horizontais suaves e a margem vermelha do caderno. */
+.folha {
+  background-color: var(--color-papel-claro);
+  background-image:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 31px,
+      rgba(44, 72, 120, 0.09) 31px,
+      rgba(44, 72, 120, 0.09) 32px
+    );
+  box-shadow:
+    0 1px 0 rgba(33, 29, 24, 0.08),
+    0 18px 40px -28px rgba(33, 29, 24, 0.55);
+}
+
+.folha-margem::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: 2.25rem;
+  width: 1px;
+  background: rgba(194, 59, 34, 0.35);
+}
+
+/* Grão de papel, fixo e inerte, para não pesar no scroll. */
+.grao {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 40;
+  opacity: 0.4;
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/></filter><rect width='160' height='160' filter='url(%23n)' opacity='0.35'/></svg>");
+}
+
+.rabisco-vermelho {
+  text-decoration: line-through;
+  text-decoration-color: var(--color-vermelho);
+  text-decoration-thickness: 2px;
+}
+
+@keyframes surgir {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.surgir {
+  animation: surgir 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@keyframes tremer {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+}
+
+.tremer {
+  animation: tremer 0.36s ease-in-out both;
+}
+
+@keyframes carimbo {
+  0% {
+    opacity: 0;
+    transform: scale(1.5) rotate(-14deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(0.94) rotate(-6deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(-7deg);
+  }
+}
+
+.carimbo {
+  animation: carimbo 0.4s cubic-bezier(0.3, 1.4, 0.5, 1) both;
+}
+
+@keyframes pulsar-tempo {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+.tempo-critico {
+  animation: pulsar-tempo 0.9s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .surgir,
+  .tremer,
+  .carimbo,
+  .tempo-critico {
+    animation: none;
+  }
+}
