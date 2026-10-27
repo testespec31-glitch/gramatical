@@ -1,4 +1,4 @@
-import { Check, Loader2, RotateCcw, Trophy } from 'lucide-react'
+import { Check, Loader2, RotateCcw, Trophy, X } from 'lucide-react'
 import {
   classificacao,
   resumoPorTema,
@@ -8,6 +8,7 @@ import {
 import { TEMA_POR_ID, type TemaId } from '../data/questions'
 import type { LinhaRanking } from '../server/ranking.functions'
 import { ListaRanking } from './ListaRanking'
+import type { ResultadoCaca } from './TelaCacaPalavras'
 
 export type EstadoSalvamento = 'inicial' | 'enviando' | 'salvo' | 'erro'
 
@@ -15,6 +16,8 @@ interface Props {
   modo: Modo
   tema: TemaId | null
   respostas: Resposta[]
+  /** Presente quando a partida foi de caça-palavras; substitui o resumo por questões. */
+  caca: ResultadoCaca | null
   pontos: number
   melhorSequencia: number
   apelido: string
@@ -32,6 +35,7 @@ export function TelaResultado({
   modo,
   tema,
   respostas,
+  caca,
   pontos,
   melhorSequencia,
   apelido,
@@ -44,8 +48,10 @@ export function TelaResultado({
   onJogarNovamente,
   onVoltarMenu,
 }: Props) {
-  const total = respostas.length
-  const acertos = respostas.filter((resposta) => resposta.acertou).length
+  const total = caca ? caca.quadro.palavras.length : respostas.length
+  const acertos = caca
+    ? caca.encontradas.length
+    : respostas.filter((resposta) => resposta.acertou).length
   const aproveitamento = total > 0 ? acertos / total : 0
   const { titulo, recado } = classificacao(aproveitamento)
   const porTema = resumoPorTema(respostas).sort(
@@ -56,12 +62,16 @@ export function TelaResultado({
     total > 0
       ? respostas.reduce((soma, resposta) => soma + resposta.segundosGastos, 0) / total
       : 0
+  const tempoCaca = caca
+    ? `${Math.floor(caca.segundosGastos / 60)}:${String(caca.segundosGastos % 60).padStart(2, '0')}`
+    : ''
 
   return (
     <div className="mx-auto grid w-full max-w-6xl gap-10 px-5 pb-20 pt-6 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:gap-14">
       <section className="surgir">
         <p className="fonte-mono text-[0.7rem] uppercase tracking-[0.28em] text-vermelho">
           Prova corrigida · {tema ? TEMA_POR_ID[tema].nome : modo.nome}
+          {caca ? ` · ${caca.quadro.conjunto.nome}` : ''}
         </p>
         <h1 className="fonte-display mt-3 text-5xl font-semibold leading-none sm:text-6xl">
           {pontos.toLocaleString('pt-BR')}
@@ -74,9 +84,11 @@ export function TelaResultado({
 
         <dl className="mt-8 grid max-w-lg grid-cols-3 gap-px border-y border-tinta/15 bg-tinta/10">
           {[
-            { valor: `${acertos}/${total}`, rotulo: 'acertos' },
+            { valor: `${acertos}/${total}`, rotulo: caca ? 'palavras' : 'acertos' },
             { valor: `${Math.round(aproveitamento * 100)}%`, rotulo: 'aproveitamento' },
-            { valor: `${tempoMedio.toFixed(1)}s`, rotulo: 'tempo médio' },
+            caca
+              ? { valor: tempoCaca, rotulo: 'tempo total' }
+              : { valor: `${tempoMedio.toFixed(1)}s`, rotulo: 'tempo médio' },
           ].map((item) => (
             <div key={item.rotulo} className="bg-papel px-3 py-4">
               <dt className="fonte-display text-2xl leading-none">{item.valor}</dt>
@@ -91,32 +103,69 @@ export function TelaResultado({
           {melhorSequencia === 1 ? '' : 's'}
         </p>
 
-        <div className="mt-10">
-          <h2 className="fonte-mono text-[0.7rem] uppercase tracking-[0.24em] text-tinta-fraca">
-            Desempenho por tema
-          </h2>
-          <ul className="mt-4 flex flex-col gap-3">
-            {porTema.map((linha) => {
-              const proporcao = linha.acertos / linha.total
-              return (
-                <li key={linha.tema} className="grid grid-cols-[8.5rem_1fr_3rem] items-center gap-3">
-                  <span className="truncate text-sm">{TEMA_POR_ID[linha.tema].nome}</span>
-                  <span className="h-2.5 w-full bg-tinta/10">
-                    <span
-                      className={`block h-full origin-left ${
-                        proporcao >= 0.6 ? 'bg-verde' : 'bg-vermelho'
+        {caca && (
+          <div className="mt-10">
+            <h2 className="fonte-mono text-[0.7rem] uppercase tracking-[0.24em] text-tinta-fraca">
+              Palavras do quadro
+            </h2>
+            <ul className="mt-4 flex flex-col gap-4">
+              {caca.quadro.palavras.map((palavra) => {
+                const achou = caca.encontradas.includes(palavra.letras)
+                return (
+                  <li
+                    key={palavra.letras}
+                    className={`border-l-2 pl-4 ${achou ? 'border-verde' : 'border-vermelho'}`}
+                  >
+                    <p
+                      className={`fonte-display flex items-center gap-2 text-lg leading-snug ${
+                        achou ? 'text-verde' : 'text-vermelho'
                       }`}
-                      style={{ transform: `scaleX(${Math.max(proporcao, 0.02)})` }}
-                    />
-                  </span>
-                  <span className="fonte-mono text-right text-xs tabular-nums text-tinta-media">
-                    {linha.acertos}/{linha.total}
-                  </span>
-                </li>
-              )
-            })}
-          </ul>
-        </div>
+                    >
+                      {achou ? (
+                        <Check className="size-4" aria-hidden="true" />
+                      ) : (
+                        <X className="size-4" aria-hidden="true" />
+                      )}
+                      {palavra.palavra}
+                    </p>
+                    <p className="mt-1 text-sm leading-relaxed text-tinta-media">
+                      {palavra.definicao}
+                    </p>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        )}
+
+        {!caca && (
+          <div className="mt-10">
+            <h2 className="fonte-mono text-[0.7rem] uppercase tracking-[0.24em] text-tinta-fraca">
+              Desempenho por tema
+            </h2>
+            <ul className="mt-4 flex flex-col gap-3">
+              {porTema.map((linha) => {
+                const proporcao = linha.acertos / linha.total
+                return (
+                  <li key={linha.tema} className="grid grid-cols-[8.5rem_1fr_3rem] items-center gap-3">
+                    <span className="truncate text-sm">{TEMA_POR_ID[linha.tema].nome}</span>
+                    <span className="h-2.5 w-full bg-tinta/10">
+                      <span
+                        className={`block h-full origin-left ${
+                          proporcao >= 0.6 ? 'bg-verde' : 'bg-vermelho'
+                        }`}
+                        style={{ transform: `scaleX(${Math.max(proporcao, 0.02)})` }}
+                      />
+                    </span>
+                    <span className="fonte-mono text-right text-xs tabular-nums text-tinta-media">
+                      {linha.acertos}/{linha.total}
+                    </span>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        )}
 
         {erros.length > 0 && (
           <div className="mt-10">

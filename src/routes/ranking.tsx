@@ -23,8 +23,8 @@ function Pagina() {
           Quem revisa melhor
         </h1>
         <p className="mt-4 max-w-lg text-tinta-media">
-          As trinta maiores pontuações registradas até agora, somando revisão rápida, maratona e
-          treinos por tema.
+          As trinta maiores pontuações registradas até agora, somando revisão rápida, maratona,
+          treinos por tema e caça-palavras.
         </p>
 
         <div className="folha folha-margem relative mt-8 p-6 pl-14 sm:p-9 sm:pl-20">

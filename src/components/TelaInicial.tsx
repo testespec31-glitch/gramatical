@@ -53,7 +53,7 @@ export function TelaInicial({
           {[
             { valor: String(QUESTOES.length), rotulo: 'questões' },
             { valor: String(totalTemas), rotulo: 'temas' },
-            { valor: '3', rotulo: 'modos de jogo' },
+            { valor: String(MODOS.length), rotulo: 'modos de jogo' },
           ].map((item) => (
             <div key={item.rotulo} className="bg-papel px-3 py-4">
               <dt className="fonte-display text-3xl leading-none">{item.valor}</dt>
@@ -170,7 +170,9 @@ export function TelaInicial({
           <ArrowRight className="size-5" aria-hidden="true" />
         </button>
         <p className="fonte-mono mt-3 text-center text-[0.65rem] uppercase tracking-[0.14em] text-tinta-fraca">
-          Responda pelo teclado: 1, 2, 3 · Enter avança
+          {modo === 'caca'
+            ? 'Arraste sobre as letras ou toque na primeira e na última'
+            : 'Responda pelo teclado: 1, 2, 3 · Enter avança'}
         </p>
       </section>
     </div>
