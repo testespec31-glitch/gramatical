@@ -8,11 +8,13 @@ import {
   type Resposta,
 } from '../game/engine'
 import type { TemaId } from '../data/questions'
+import { montarQuadro, type Quadro } from '../game/cacaPalavras'
 import {
   buscarRanking,
   registrarPartida,
   type LinhaRanking,
 } from '../server/ranking.functions'
+import { TelaCacaPalavras, type ResultadoCaca } from './TelaCacaPalavras'
 import { TelaInicial } from './TelaInicial'
 import { TelaJogo } from './TelaJogo'
 import { TelaResultado, type EstadoSalvamento } from './TelaResultado'
@@ -34,6 +36,8 @@ export function Jogo({ rankingInicial }: { rankingInicial: LinhaRanking[] }) {
   const [sequencia, setSequencia] = useState(0)
   const [melhorSequencia, setMelhorSequencia] = useState(0)
   const [vidas, setVidas] = useState<number | null>(null)
+  const [quadro, setQuadro] = useState<Quadro | null>(null)
+  const [resultadoCaca, setResultadoCaca] = useState<ResultadoCaca | null>(null)
 
   const [ranking, setRanking] = useState<LinhaRanking[]>(rankingInicial)
   const [destaqueId, setDestaqueId] = useState<number | null>(null)
@@ -54,6 +58,18 @@ export function Jogo({ rankingInicial }: { rankingInicial: LinhaRanking[] }) {
   const config = MODO_POR_ID[modo]
 
   const comecar = useCallback(() => {
+    setDestaqueId(null)
+    setEstadoSalvamento('inicial')
+    setErroSalvamento(null)
+    if (modo === 'caca') {
+      setQuadro(montarQuadro())
+      setResultadoCaca(null)
+      setRespostas([])
+      setFase('jogando')
+      return
+    }
+    setQuadro(null)
+    setResultadoCaca(null)
     const novaRodada = montarRodada(modo, modo === 'tema' ? tema : null)
     if (novaRodada.length === 0) return
     setRodada(novaRodada)
@@ -63,9 +79,6 @@ export function Jogo({ rankingInicial }: { rankingInicial: LinhaRanking[] }) {
     setSequencia(0)
     setMelhorSequencia(0)
     setVidas(MODO_POR_ID[modo].vidas)
-    setDestaqueId(null)
-    setEstadoSalvamento('inicial')
-    setErroSalvamento(null)
     setFase('jogando')
   }, [modo, tema])
 
@@ -125,15 +138,25 @@ export function Jogo({ rankingInicial }: { rankingInicial: LinhaRanking[] }) {
     setErroSalvamento(null)
     try {
       const resultado = await registrarPartida({
-        data: {
-          apelido: nome,
-          modo,
-          tema: modo === 'tema' ? tema : null,
-          pontos,
-          acertos: respostas.filter((resposta) => resposta.acertou).length,
-          total: respostas.length,
-          melhorSequencia,
-        },
+        data: resultadoCaca
+          ? {
+              apelido: nome,
+              modo: 'caca',
+              tema: null,
+              pontos: resultadoCaca.pontos,
+              acertos: resultadoCaca.encontradas.length,
+              total: resultadoCaca.quadro.palavras.length,
+              melhorSequencia: resultadoCaca.melhorSequencia,
+            }
+          : {
+              apelido: nome,
+              modo,
+              tema: modo === 'tema' ? tema : null,
+              pontos,
+              acertos: respostas.filter((resposta) => resposta.acertou).length,
+              total: respostas.length,
+              melhorSequencia,
+            },
       })
       const atualizado = await buscarRanking({ data: { limite: 20 } })
       setRanking(atualizado)
@@ -144,7 +167,21 @@ export function Jogo({ rankingInicial }: { rankingInicial: LinhaRanking[] }) {
       setEstadoSalvamento('erro')
       setErroSalvamento('Não foi possível registrar a partida agora. Tente novamente.')
     }
-  }, [apelido, melhorSequencia, modo, pontos, respostas, tema])
+  }, [apelido, melhorSequencia, modo, pontos, respostas, resultadoCaca, tema])
+
+  if (fase === 'jogando' && quadro) {
+    return (
+      <TelaCacaPalavras
+        quadro={quadro}
+        modo={config}
+        onTerminar={(resultado) => {
+          setResultadoCaca(resultado)
+          setFase('fim')
+        }}
+        onSair={() => setFase('inicio')}
+      />
+    )
+  }
 
   if (fase === 'jogando' && rodada[indice]) {
     const questao = rodada[indice]
@@ -173,8 +210,9 @@ export function Jogo({ rankingInicial }: { rankingInicial: LinhaRanking[] }) {
         modo={config}
         tema={modo === 'tema' ? tema : null}
         respostas={respostas}
-        pontos={pontos}
-        melhorSequencia={melhorSequencia}
+        caca={resultadoCaca}
+        pontos={resultadoCaca?.pontos ?? pontos}
+        melhorSequencia={resultadoCaca?.melhorSequencia ?? melhorSequencia}
         apelido={apelido}
         estadoSalvamento={estadoSalvamento}
         erroSalvamento={erroSalvamento}

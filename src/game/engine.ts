@@ -1,6 +1,6 @@
 import { QUESTOES, type Questao, type TemaId } from '../data/questions'
 
-export type ModoId = 'rapido' | 'maratona' | 'tema'
+export type ModoId = 'rapido' | 'maratona' | 'tema' | 'caca'
 
 export interface Modo {
   id: ModoId
@@ -37,6 +37,15 @@ export const MODOS: Modo[] = [
     chamada: '1 assunto',
     descricao: 'Escolha um assunto e treine só ele, com mais tempo para pensar em cada questão.',
     segundos: 30,
+    vidas: null,
+    quantidade: 8,
+  },
+  {
+    id: 'caca',
+    nome: 'Caça-palavras',
+    chamada: '8 palavras',
+    descricao: 'Encontre os termos gramaticais escondidos no quadro em até quatro minutos. Cada achado revela a definição.',
+    segundos: 240,
     vidas: null,
     quantidade: 8,
   },
