@@ -1,0 +1,56 @@
+name: Refresh pnpm lockfile and verify migration
+
+on:
+  push:
+    branches:
+      - migracao-vercel
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: migration-lockfile-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  refresh-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out migration branch
+        uses: actions/checkout@v4
+        with:
+          ref: migracao-vercel
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.28.9
+
+      - name: Regenerate lockfile
+        run: pnpm install --lockfile-only
+
+      - name: Approve esbuild install scripts
+        run: pnpm approve-builds esbuild
+
+      - name: Verify frozen install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build production bundle
+        run: pnpm build
+
+      - name: Save verified lockfile
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pnpm-lock.yaml pnpm-workspace.yaml
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: refresh pnpm lockfile for Vercel migration"
+            git push origin HEAD:migracao-vercel
+          fi
